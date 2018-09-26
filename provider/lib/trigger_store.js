@@ -55,7 +55,9 @@ class TriggerStore {
   }
 
   remove (id) {
-    return this.couchdb.get(this.db_name, id).then(({data, headers, status}) => this.couchdb.del(this.db_name, data._id, data._rev))
+    return this.couchdb.get(this.db_name, id).then(({data, headers, status}) => {
+      console.log("data: %s\nheaders: %s, status: %s", data, headers, status)
+      this.couchdb.del(this.db_name, data._id, data._rev)})
   }
 
   triggers (url, topic) {
@@ -67,10 +69,12 @@ class TriggerStore {
   }
 
   subscribers () {
+    let view = '_design/subscriptions/_view/all'
     const extract_subscribers = ({data, headers, status}) => data.rows.map(row => { 
       return {trigger: row.key, topic: row.value} 
     })
-    return this.couchdb.get(this.db_name, '_design/subscriptions/_view/all').then(extract_subscribers)
+    console.log("view: %s", view)
+    return this.couchdb.get(this.db_name, view).then(extract_subscribers)
   }
 }
 
