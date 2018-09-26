@@ -55,6 +55,7 @@ class TriggerStore {
   }
 
   remove (id) {
+    console.log("ID to remove: %s", id)
     return this.couchdb.get(this.db_name, id).then(({data, headers, status}) => {
       console.log("data: %s\nheaders: %s, status: %s", data, headers, status)
       this.couchdb.del(this.db_name, data._id, data._rev)})
