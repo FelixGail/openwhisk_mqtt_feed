@@ -60,7 +60,6 @@ class TriggerStore {
 
   triggers (url, topic) {
     const key = topic ? `${url}#${topic}` : url
-    const _view = Promise.promisify(this.db.view, {context: this.db})
     const extract_triggers = ({data, headers, status}) => data.rows.map(row => row.value)
     const view = '_design/subscriptions/_view/' + topic? 'host_topic_triggers' : 'host_triggers'
     return this.couchdb.get(this.db_name, view,  {startkey: key, endkey: key}).then(extract_triggers)
