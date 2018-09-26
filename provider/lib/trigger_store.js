@@ -4,12 +4,12 @@ class TriggerStore {
   constructor (env) {
     this.couchdb = new NodeCouchDb({
       auth: {
-        user: env.db_username,
-        pass: env.db_password
+        user: env.username,
+        pass: env.password
       },
-      host: env.db_host,
-      port: env.db_port,
-      protocol: env.db_protocol
+      host: env.host,
+      port: env.port,
+      protocol: env.protocol
     });
     this.db_name = env.db_name;
   }

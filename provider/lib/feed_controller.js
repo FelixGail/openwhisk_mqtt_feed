@@ -21,7 +21,7 @@ class FeedController {
           subscribers.forEach(s => mgr.subscribe.apply(mgr, s.topic.split('#')))
         })
       }).catch(err => {
-        console.error('Error initialising subscribers from couchdb store.' , err)
+        console.error('Error initialising subscribers from couchdb store.\n' , err)
         return Promise.reject('Unable to initialise due to store failure.')});
   }
   
