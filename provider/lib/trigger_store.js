@@ -60,9 +60,14 @@ class TriggerStore {
 
   triggers (url, topic) {
     const key = topic ? `${url}#${topic}` : url
-    const extract_triggers = ({data, headers, status}) => data.rows.map(row => row.value)
+    const extract_triggers = ({data, headers, status}) => {
+      console.log("data: %s", data)
+      return data.rows.map(row => row.value)}
     const view = '_design/subscriptions/_view/' + topic? 'host_topic_triggers' : 'host_triggers'
-    return this.couchdb.get(this.db_name, view,  {startkey: key, endkey: key}).then(extract_triggers)
+    console.log("accessing view: %s, key: %s", view, topic)
+    return this.couchdb.get(this.db_name, view,  {startkey: key, endkey: key}).then(extract_triggers).then(data => {
+      console.log(data)
+      return data})
   }
 
   subscribers () {
