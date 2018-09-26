@@ -1,34 +1,76 @@
-const Promise = require('bluebird')
+const NodeCouchDb = require('node-couchdb');
 
 class TriggerStore {
-  constructor (db) {
-    this.db = db
+  constructor (env) {
+    this.couchdb = new NodeCouchDb({
+      auth: {
+        user: env.db_username,
+        pass: env.db_password
+      },
+      host: env.db_host,
+      port: env.db_port,
+      protocol: env.db_protocol
+    });
+    this.db_name = env.db_name;
+  }
+
+  initialize() {
+    return this.couchdb.listDatabases().then(dbs => {
+      if(!dbs.includes(this.db_name)) {
+          console.log("Missing Trigger Database. Creating.");
+          return true;
+      }
+      return false;
+    }).then(boolValue => {
+        if(boolValue) {
+          return this.couchdb.createDatabase(this.db_name).then(() => {
+            console.log("Database created successfully.");
+            const views = {
+              "_id": "_design/subscriptions",
+              "views": {
+                "host_topic_counts": {
+                  "reduce": "_sum",
+                  "map": "function (doc) {\n  emit(doc.url + '#' + doc.topic, 1);\n}"
+                },
+                "host_topic_triggers": {
+                  "map": "function (doc) {\n  emit(doc.url + '#' + doc.topic, {trigger: doc._id, username: doc.username, password: doc.password});\n}"
+                },
+                "all": {
+                  "map": "function (doc) {\n  emit(doc._id, doc.url + '#' + doc.topic);\n}"
+                },
+                "host_triggers": {
+                  "map": "function (doc) {\n  emit(doc.url, {trigger: doc._id, username: doc.username, password: doc.password});\n}"
+                }
+              }
+            }            
+            return this.couchdb.insert(this.db_name, views)
+          }).then(console.log("Views added successfully."))
+        }
+      })
   }
 
   add (trigger) {
-    const _insert = Promise.promisify(this.db.insert, {context: this.db})
-    return _insert(trigger, trigger.trigger)
+    // trigger (namespace/name), url, topic, username, password
+    return this.couchdb.insert(this.db_name, {_id: trigger.trigger, trigger})
   }
 
   remove (id) {
-    const _get = Promise.promisify(this.db.get, {context: this.db})
-    const _destroy = Promise.promisify(this.db.destroy, {context: this.db})
-    return _get(id).then(doc => _destroy(doc._id, doc._rev)) 
+    return this.couchdb.get(this.db_name, id).then(({data, headers, status}) => this.couchdb.del(this.db_name, data._id, data._rev))
   }
 
   triggers (url, topic) {
     const key = topic ? `${url}#${topic}` : url
     const _view = Promise.promisify(this.db.view, {context: this.db})
-    const extract_triggers = body => body.rows.map(row => row.value)
-    return _view('subscriptions', topic ? 'host_topic_triggers' : 'host_triggers', {startkey: key, endkey: key}).then(extract_triggers)
+    const extract_triggers = ({data, headers, status}) => data.rows.map(row => row.value)
+    const view = '_design/subscriptions/_view/' + topic? 'host_topic_triggers' : 'host_triggers'
+    return this.couchdb.get(this.db_name, view,  {startkey: key, endkey: key}).then(extract_triggers)
   }
 
   subscribers () {
-    const _view = Promise.promisify(this.db.view, {context: this.db})
-    const extract_subscribers = body => body.rows.map(row => { 
+    const extract_subscribers = ({data, headers, status}) => data.rows.map(row => { 
       return {trigger: row.key, topic: row.value} 
     })
-    return _view('subscriptions', 'all').then(extract_subscribers)
+    return this.couchdb.get(this.db_name, '_design/subscriptions/_view/all').then(extract_subscribers)
   }
 }
 

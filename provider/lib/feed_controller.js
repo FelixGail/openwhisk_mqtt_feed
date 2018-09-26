@@ -4,24 +4,25 @@ const MQTTSubscriptionMgr = require('./mqtt_subscription_mgr.js')
 const TriggerStore = require('./trigger_store.js')
 
 class FeedController {
-  constructor (db, ow_endpoint) {
+  constructor (env) {
     this.mqtt_subscription_mgr = new MQTTSubscriptionMgr(mqtt)
-    this.trigger_store = new TriggerStore(db)
-    this.ow_endpoint = ow_endpoint
+    this.trigger_store = new TriggerStore(env)
+    this.ow_endpoint = env.rest
   }
 
   initialise () {
-    const mgr = this.mqtt_subscription_mgr
-    mgr.on('message', (url, topic, message) => this.on_message(url, topic, message))
-    mgr.on('connected', url => this.on_conn_status('connected', url))
-    mgr.on('disconnected', url => this.on_conn_status('disconnected', url))
-
-    return this.trigger_store.subscribers().then(subscribers => {
-       subscribers.forEach(s => mgr.subscribe.apply(mgr, s.topic.split('#')))
-    }).catch(err => {
-      console.error('Error initialising subscribers from couchdb store.' , err.reason)
-      return Promise.reject('Unable to initialise due to store failure.')
-    })
+    return this.trigger_store.initialize().then(() => {
+      const mgr = this.mqtt_subscription_mgr
+      mgr.on('message', (url, topic, message) => this.on_message(url, topic, message))
+      mgr.on('connected', url => this.on_conn_status('connected', url))
+      mgr.on('disconnected', url => this.on_conn_status('disconnected', url))
+      }).then(() => {
+        return this.trigger_store.subscribers().then(subscribers => {
+          subscribers.forEach(s => mgr.subscribe.apply(mgr, s.topic.split('#')))
+        })
+      }).catch(err => {
+        console.error('Error initialising subscribers from couchdb store.' , err)
+        return Promise.reject('Unable to initialise due to store failure.')});
   }
   
   on_conn_status (status, url) {
