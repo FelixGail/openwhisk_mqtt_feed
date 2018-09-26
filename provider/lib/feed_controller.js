@@ -16,8 +16,7 @@ class FeedController {
       mgr.on('message', (url, topic, message) => this.on_message(url, topic, message))
       mgr.on('connected', url => this.on_conn_status('connected', url))
       mgr.on('disconnected', url => this.on_conn_status('disconnected', url))
-      }).then(() => {
-        return this.trigger_store.subscribers().then(subscribers => {
+      return this.trigger_store.subscribers().then(subscribers => {
           subscribers.forEach(s => mgr.subscribe.apply(mgr, s.topic.split('#')))
         })
       }).catch(err => {
