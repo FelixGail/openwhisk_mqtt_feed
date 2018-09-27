@@ -51,6 +51,7 @@ class TriggerStore {
 
   add (trigger) {
     // trigger (namespace/name), url, topic, username, password
+    console.log("request_body: ", trigger)
     return this.couchdb.insert(this.db_name, {_id: trigger.trigger, trigger})
   }
 
