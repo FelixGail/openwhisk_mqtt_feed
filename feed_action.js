@@ -27,7 +27,7 @@ function create (msg) {
 
   const user_pass = msg.authKey.split(':')
   const body = {
-    trigger: msg.triggerName,
+    trigger: msg.namespace + "/" + msg.trigger,
     url: msg.url,
     topic: msg.topic,
     username: user_pass[0],
@@ -44,7 +44,7 @@ function create (msg) {
 function remove (msg) {
   request({
     method: "DELETE",
-    uri: msg.provider_endpoint + msg.triggerName
+    uri: msg.provider_endpoint + msg.namespace + "/" + msg.trigger
   }, handle_response)
 }
 
