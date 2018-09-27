@@ -1,21 +1,34 @@
 const express = require('express')
 const FeedController = require('./lib/feed_controller.js')
+const nconf = require('nconf')
 
 const app = express()
 const bodyparser = require('body-parser')
 app.use(bodyparser.json())
 let env = {}
 
-env.username = process.env.OW_DB_USERNAME
-env.password = process.env.OW_DB_PASSWORD
-env.rest = process.env.OW_REST_URL
-env.host = process.env.OW_DB_HOST? process.env.OW_DB_HOST : '127.0.0.1';
-env.port = process.env.OW_DB_PORT? process.env.OW_DB_PORT : '5984';
-env.protocol = process.env.OW_DB_PROTOCOL? process.env.OW_DB_PROTOCOL : 'http';
+nconf.argv()
+   .env()
+   .file({ file: 'config.json' });
+
+nconf.defaults({
+  'OW_DB_HOST': '127.0.0.1',
+  'OW_DB_PORT': '5984',
+  'OW_DB_PROTOCOL': 'http',
+  'OW_REST_PROTOCOL': 'https',
+  'OW_REST_URL': '127.0.0.1/api/v1'
+})
+
+env.username = nconf.get('OW_DB_USERNAME')
+env.password = nconf.get('OW_DB_PASSWORD')
+env.rest = nconf.get('OW_REST_PROTOCOL') + '://' + nconf.get('OW_REST_URL')
+env.host = nconf.get('OW_DB_HOST')
+env.port = nconf.get('OW_DB_PORT')
+env.protocol = nconf.get('OW_DB_PROTOCOL')
 env.db_name = "topic_listeners"
 //TODO: add config file support
-if (!env.username || !env.password || !env.rest) {
-    console.error('Missing credentials...\n\tOW_DB_USERNAME: %s\n\tOW_DB_PASSWORD: %s\n\tOW_REST_URL: %s', !!env.username, !!env.password, !!env.rest)
+if (!env.username || !env.password) {
+    console.error('Missing credentials...\n\tOW_DB_USERNAME: %s\n\tOW_DB_PASSWORD: %s', !!env.username, !!env.password)
     process.exit(1)
 }
 
