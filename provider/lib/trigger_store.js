@@ -52,7 +52,8 @@ class TriggerStore {
   add (trigger) {
     // trigger (namespace/name), url, topic, username, password
     console.log("request_body: ", trigger)
-    return this.couchdb.insert(this.db_name, {_id: trigger.trigger, trigger})
+    trigger._id = trigger.trigger
+    return this.couchdb.insert(this.db_name, trigger)
   }
 
   remove (id) {
@@ -64,7 +65,9 @@ class TriggerStore {
 
   triggers (url, topic) {
     const key = topic ? `${url}#${topic}` : url
-    const extract_triggers = ({data, headers, status}) => data.rows.map(row => row.value)
+    const extract_triggers = ({data, headers, status}) => {
+      console.log("view result: ", data)
+      return data.rows.map(row => row.value)}
     let view = '_design/subscriptions/_view/' + (topic? 'host_topic_triggers' : 'host_triggers')
     console.log("accessing view: %s, key: %s", view, topic)
     return this.couchdb.get(this.db_name, view,  {startkey: key, endkey: key}).then(extract_triggers)
@@ -73,6 +76,7 @@ class TriggerStore {
   subscribers () {
     let view = '_design/subscriptions/_view/all'
     const extract_subscribers = ({data, headers, status}) => data.rows.map(row => { 
+      console.log("Row: ",row)
       return {trigger: row.key, topic: row.value} 
     })
     console.log("view: %s", view)

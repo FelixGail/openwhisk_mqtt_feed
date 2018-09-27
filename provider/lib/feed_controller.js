@@ -35,6 +35,7 @@ class FeedController {
     console.log(`Message received (${url}) #${topic}: ${message}`)
     const params = {type: 'message', body: message}
     this.trigger_store.triggers(url, topic).then(triggers => {
+      console.log("Triggers: ", triggers)
       triggers.forEach(trigger => this.fire_trigger(trigger, params))
     }).catch(err => console.error('Unable to forward message to triggers.', err.reason))
   }
@@ -43,7 +44,10 @@ class FeedController {
     console.log(`Firing trigger: ${trigger.trigger}`, params)
     const [namespace, name] = trigger.trigger.split('/').slice(1)
     var ow = openwhisk({api: this.ow_endpoint, api_key: `${trigger.username}:${trigger.password}`, namespace: namespace});
-    ow.triggers.invoke({triggerName: name, params: params})
+    console.log("namespace: %s, name: %s", namespace, name)
+    ow.triggers.invoke({triggerName: name, blocking: true, resutl: true, params: params}).then(result => {
+      console.log('here is the result: ', result)
+    })
       .catch(err => console.error(`Failed to fire trigger ${trigger.trigger}`, err.reason))
   }
 
